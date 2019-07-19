@@ -31,11 +31,32 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
 
         if (this.options.includeImages) {
             await results.forEachAsync(async (assetMetadata) => {
+
+                await assetMetadata.regions.forEachAsync(async (region) => {
+                    const arrayBuffer = await HtmlFileReader.getRegionArray(assetMetadata.asset,region);
+                    //filename->asset.name
+                    if(region.tags.length<2){
+                        region.tags[0]="peopleMistagged";
+                        region.tags[1]="actionMistagged";
+                    }
+                    const regionFileName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp.toString + "_" + region.id + ".jpg";
+                    const assetFilePath = `vott-json-export/${regionFileName}`;
+                    await this.storageProvider.writeBinary(assetFilePath, Buffer.from(arrayBuffer));
+                });
+
+            });
+        }
+
+
+        //original code
+        /* if (this.options.includeImages) {
+            await results.forEachAsync(async (assetMetadata) => {
                 const arrayBuffer = await HtmlFileReader.getAssetArray(assetMetadata.asset);
+                //add const pathName -> people_action_timestamp
                 const assetFilePath = `vott-json-export/${assetMetadata.asset.name}`;
                 await this.storageProvider.writeBinary(assetFilePath, Buffer.from(arrayBuffer));
             });
-        }
+        } */
 
         const exportObject = { ...this.project };
         exportObject.assets = _.keyBy(results, (assetMetadata) => assetMetadata.asset.id) as any;
