@@ -39,6 +39,19 @@ class TestStorageProvider implements IStorageProvider {
     public writeBinary(filePath: string, contents: Buffer): Promise<void> {
         throw new Error("Method not implemented.");
     }
+
+    public renameFolder(oldPath: string, newPath: string): Promise<void>{
+        throw new Error("Method not implemented.");
+    }
+    
+    public writeTertiary(filePath: string, contents: Buffer): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+
+    public ifFolderExists(filePath: string): Promise<boolean> {
+        throw new Error("Method not implemented.");
+    }
+
     public listFiles(folderPath?: string): Promise<string[]> {
         throw new Error("Method not implemented.");
     }

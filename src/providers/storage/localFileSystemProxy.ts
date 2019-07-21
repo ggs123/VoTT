@@ -85,6 +85,19 @@ export class LocalFileSystemProxy implements IStorageProvider, IAssetProvider {
     }
 
     /**
+     * Write buffer to file
+     * @param fileName Name of target file
+     * @param contents Contents to be written
+     */
+    public writeTertiary(fileName: string, contents: Buffer): Promise<void> {
+        const filePath = [this.options.folderPath, fileName].join("/");
+        return IpcRendererProxy.send(`${PROXY_NAME}:writeTertiary`, [filePath, contents]);
+    }
+
+
+
+
+    /**
      * List files in directory
      * @param folderName - Name of folder from which to list files
      * @param ext - NOT CURRENTLY USED IN IMPLEMENTATION.
@@ -111,6 +124,26 @@ export class LocalFileSystemProxy implements IStorageProvider, IAssetProvider {
         const folderPath = [this.options.folderPath, folderName].join("/");
         return IpcRendererProxy.send(`${PROXY_NAME}:createContainer`, [folderPath]);
     }
+
+    public ifFolderExists(filePath: string): Promise<boolean> {
+        const folderPath = [this.options.folderPath, filePath].join("/");
+        return IpcRendererProxy.send(`${PROXY_NAME}:ifFolderExists`, [folderPath]);
+    }
+
+
+
+    /**
+     * Rename folder
+     * @param oldPath - Name of directory to change
+     * @param newPath - Name of directory to create
+     */
+    public renameFolder(oldPath: string, newPath: string): Promise<void>  {
+        
+        const folderPath = [this.options.folderPath, oldPath].join("/");
+        return IpcRendererProxy.send(`${PROXY_NAME}:renameFolder`, [folderPath, newPath]);
+    }
+
+
 
     /**
      * Delete directory

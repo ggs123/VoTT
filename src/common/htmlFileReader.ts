@@ -201,10 +201,10 @@ export default class HtmlFileReader {
             };
             video.onseeked = () => {
                 const canvas = document.createElement("canvas");
-                canvas.height = video.videoHeight;
-                canvas.width = video.videoWidth;
+                canvas.width = region.boundingBox.width;
+                canvas.height = region.boundingBox.height;
                 const ctx = canvas.getContext("2d");
-                ctx.drawImage(video, region.boundingBox.left, region.boundingBox.top, region.boundingBox.width, region.boundingBox.height,0,0,region.boundingBox.width, region.boundingBox.height);
+                ctx.drawImage(video, region.boundingBox.left, region.boundingBox.top, region.boundingBox.width, region.boundingBox.height,0,0,canvas.width,canvas.height);
                 canvas.toBlob(resolve);
             };
             video.onerror = reject;

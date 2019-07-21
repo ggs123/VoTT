@@ -70,6 +70,41 @@ export default class LocalFileSystem implements IStorageProvider {
         });
     }
 
+    public ifFolderExists(filePath: string): Promise<boolean> {
+        return new Promise<boolean>((resolve) => {
+            const exists = fs.existsSync(path.normalize(filePath));
+            resolve(exists);
+        });
+    }
+
+    
+
+    //new*
+    public writeTertiary(filePath: string, contents: Buffer): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            const containerName_1: fs.PathLike = path.normalize(path.dirname(path.dirname(filePath)));
+            const containerName_2: fs.PathLike = path.normalize(path.dirname(filePath));
+            
+            const exists_1 = fs.existsSync(containerName_1);
+            const exists_2 = fs.existsSync(containerName_2);
+
+            if (!exists_1) {
+                fs.mkdirSync(containerName_1);
+            }
+            if (!exists_2) {
+                fs.mkdirSync(containerName_2);
+            }
+
+            fs.writeFile(path.normalize(filePath), contents, (err) => {
+                if (err) {
+                    return reject(err);
+                }
+
+                resolve();
+            });
+        });
+    }
+
     public writeText(filePath: string, contents: string): Promise<void> {
         const buffer = Buffer.from(contents);
         return this.writeBinary(filePath, buffer);
@@ -115,6 +150,17 @@ export default class LocalFileSystem implements IStorageProvider {
                     });
                 }
             });
+        });
+    }
+
+    public renameFolder(oldPath: string, newPath: string): Promise<void>  {
+        return new Promise((resolve, reject) => {
+            fs.rename(oldPath,newPath,function(err){ 
+                if(err){ 
+                    return reject(err);
+                }
+                resolve();
+            }); 
         });
     }
 

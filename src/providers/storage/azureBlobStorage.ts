@@ -99,6 +99,13 @@ export class AzureBlobStorage implements IStorageProvider {
         return this.writeText(blobName, content);
     }
 
+
+    public writeTertiary(blobName: string, content: Buffer) {
+        return this.writeText(blobName, content);
+    }
+
+    
+
     /**
      * Deletes file from container
      * @param blobName - Name of blob in container
@@ -164,6 +171,33 @@ export class AzureBlobStorage implements IStorageProvider {
      * provider, this function creates that container. Included to satisfy interface
      */
     public async createContainer(containerName: string): Promise<void> {
+        const containerURL = this.getContainerURL();
+        try {
+            await containerURL.create(Aborter.none);
+        } catch (e) {
+            if (e.statusCode === 409) {
+                return;
+            }
+
+            throw e;
+        }
+    }
+
+    public ifFolderExists(filePath: string): Promise<boolean> {
+        const containerURL = this.getContainerURL();
+        try {
+            containerURL.create(Aborter.none);
+        } catch (e) {
+            if (e.statusCode === 409) {
+                return;
+            }
+
+            throw e;
+        }
+    }
+
+
+    public async renameFolder(oldPath: string, newPath: string): Promise<void> {
         const containerURL = this.getContainerURL();
         try {
             await containerURL.create(Aborter.none);
