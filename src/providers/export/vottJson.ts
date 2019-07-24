@@ -4,9 +4,7 @@ import { IProject, IExportProviderOptions } from "../../models/applicationState"
 import Guard from "../../common/guard";
 import { constants } from "../../common/constants";
 import HtmlFileReader from "../../common/htmlFileReader";
-//import { IAssetMetadata } from "vott-react";
-import { string } from "prop-types";
-import { IAssetMetadata } from "../../models/applicationState";
+import { IAssetMetadata,IRegion } from "../../models/applicationState";
 import fs from "fs";
 
 /**
@@ -33,36 +31,118 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
      public async export(): Promise<void> {
 
         const results = await this.getAssetsForExport(); 
+        results.sort(compare);
 
-        //simplified: all picture in one folder
+        var folderRecord = new Map();
 
         if (this.options.includeImages) {
-            await results.forEachAsync(async (assetMetadata) => {
 
-                await assetMetadata.regions.forEachAsync(async (region) => {
-                    const arrayBuffer = await HtmlFileReader.getRegionArray(assetMetadata.asset,region);
-                    //filename->asset.name
+            results.forEach( function(assetMetadata, idx){
+
+                assetMetadata.regions.forEach( (region) => {
+                    
                     if(region.tags.length<2){
                         region.tags[0]="ErrorTag1";
                         region.tags[1]="ErrorTag2";
                     }
 
-                    //save in new folder
-                    //const firstFolderName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp;
-                    const firstRegionFileName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "_" + region.id + ".jpg";
-                    const firstAssetFilePath = `vott-json-export/${firstRegionFileName}`;
-                    await this.storageProvider.writeBinary(firstAssetFilePath, Buffer.from(arrayBuffer));
+                    if(idx !== 0){
+
+                        const prevRegion = results[idx-1].regions.find( (r) => r.tags[0]===region.tags[0] );
+
+                        if(prevRegion){
+                            //region in previous frame has same Tag[0]
+
+                            if(prevRegion.tags[1] === region.tags[1]){
+                                //Tag[1] also the same: save current region in prevRegion folder
+
+                                const prevRegionFolderName = folderRecord[prevRegion.id];
+                                const regionFolderName = removeTail(prevRegionFolderName) + assetMetadata.asset.timestamp;
+                                folderRecord[region.id] = regionFolderName;
+                                folderRecord[prevRegion.id] = regionFolderName;
+                                renewFolder(regionFolderName,idx-1,prevRegion);
+
+                            }else{
+                                //Tag[1] not the same: rename prevRegion folder
+
+                                const prevRegionFolderName = folderRecord[prevRegion.id];
+                                const newPrevRegionFolderName = removeTail(prevRegionFolderName) + results[idx-1].asset.timestamp;
+                                folderRecord[prevRegion.id] = newPrevRegionFolderName;
+                                renewFolder(newPrevRegionFolderName,idx-1,prevRegion);
+
+                                //save current region in new folder
+                                const regionFolderName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "-" + assetMetadata.asset.timestamp;
+                                folderRecord[region.id] = regionFolderName;
+                            }
+                        
+                        }else{
+                            //no prevRegion has same Tag[0]: save in new folder
+                            const regionFolderName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "-" + assetMetadata.asset.timestamp;
+                            folderRecord[region.id] = regionFolderName;
+                        }
+
+                    }else{
+                        //first frame
+                        const regionFolderName =  region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "-" + assetMetadata.asset.timestamp;
+                        folderRecord[region.id] = regionFolderName;
+                    }
+
                 });
 
             });
-        } 
+
+            await results.forEachAsync(async (assetMetadata) => {
+
+                await assetMetadata.regions.forEachAsync(async (region) => {
+
+                    const arrayBuffer = await HtmlFileReader.getRegionArray(assetMetadata.asset,region);
+                    const regionFolderName = folderRecord[region.id];
+                    const regionFileName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "_" +region.id + ".jpg";
+                    const assetFilePath = `vott-json-export/${regionFolderName}/${regionFileName}`;
+                    await this.storageProvider.writeTertiary(assetFilePath, Buffer.from(arrayBuffer));
+
+                });
+
+            });
+
+        }  
+
+
+        function compare (a:IAssetMetadata, b:IAssetMetadata){
+            if(a.asset.timestamp<b.asset.timestamp){
+                return -1;
+            }else if(a.asset.timestamp>b.asset.timestamp){
+                return 1;
+            }else return 0;
+        }
+
+        function removeTail(folder:string):string{
+            var i = folder.lastIndexOf("-");
+            return folder.substr(0,i+1);
+        }
+
+
+        function renewFolder(folderName:string, i:number, region:IRegion):void{
+
+            while(i>0){
+                var prevReg = results[i-1].regions.find( (r) => r.tags[0]===region.tags[0] && r.tags[1]===region.tags[1] );
+                if(prevReg){
+                    folderRecord[prevReg.id]=folderName;
+                }else{
+                    break;
+                }
+                i--;
+            } 
+
+        }
+
 
 
     //complete: pictures categorized by folders
     //bug: regions in first frame appeared in "undefined" folder
 
-     /*
-        if (this.options.includeImages) {
+     
+       /*  if (this.options.includeImages) {
 
 
             var regFolderName : string;
@@ -108,8 +188,8 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
                                     //rename reg folder: add reg endtime
                                     const newRegFolderName = regFolderName + "_" + results[frameIdx-1].asset.timestamp;
             
-                                    await this.storageProvider.renameFolder(`vott-json-export/${regFolderName}`,
-                                        `vott-json-export/${newRegFolderName}`); 
+                                    //await this.storageProvider.renameFolder(`vott-json-export/${regFolderName}`,
+                                        //`vott-json-export/${newRegFolderName}`); 
                                     
                                 }
 
@@ -165,7 +245,7 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
 
                 });
 
-                //before new frame: renew folderBuffer with previous folderpaths
+                //before new frame: renew folderBuffer with current folderpaths
 
                 folderBuffer = regionFolders;
 
