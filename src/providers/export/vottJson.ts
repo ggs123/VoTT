@@ -46,46 +46,29 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
                         region.tags[1]="ErrorTag2";
                     }
 
+
                     if(idx !== 0){
 
                         const prevRegion = results[idx-1].regions.find( (r) => r.tags[0]===region.tags[0] );
-
-                        if(prevRegion){
-                            //region in previous frame has same Tag[0]
-
-                            if(prevRegion.tags[1] === region.tags[1]){
-                                //Tag[1] also the same: save current region in prevRegion folder
-
-                                const prevRegionFolderName = folderRecord[prevRegion.id];
-                                const regionFolderName = removeTail(prevRegionFolderName) + assetMetadata.asset.timestamp;
-                                folderRecord[region.id] = regionFolderName;
-                                folderRecord[prevRegion.id] = regionFolderName;
-                                renewFolder(regionFolderName,idx-1,prevRegion);
-
-                            }else{
-                                //Tag[1] not the same: rename prevRegion folder
-
-                                const prevRegionFolderName = folderRecord[prevRegion.id];
-                                const newPrevRegionFolderName = removeTail(prevRegionFolderName) + results[idx-1].asset.timestamp;
-                                folderRecord[prevRegion.id] = newPrevRegionFolderName;
-                                renewFolder(newPrevRegionFolderName,idx-1,prevRegion);
-
-                                //save current region in new folder
-                                const regionFolderName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "-" + assetMetadata.asset.timestamp;
-                                folderRecord[region.id] = regionFolderName;
-                            }
                         
+                        if(prevRegion && prevRegion.tags[1] === region.tags[1]){
+
+                            const prevRegionFolderName = folderRecord[prevRegion.id];
+                            const regionFolderName = removeTail(prevRegionFolderName) + assetMetadata.asset.timestamp;
+                            folderRecord[region.id] = regionFolderName;
+                            folderRecord[prevRegion.id] = regionFolderName;
+                            renewFolder(regionFolderName,idx-1,prevRegion);
+
                         }else{
-                            //no prevRegion has same Tag[0]: save in new folder
-                            const regionFolderName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "-" + assetMetadata.asset.timestamp;
+                            const regionFolderName =  region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "-" + assetMetadata.asset.timestamp;
                             folderRecord[region.id] = regionFolderName;
                         }
 
                     }else{
-                        //first frame
                         const regionFolderName =  region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "-" + assetMetadata.asset.timestamp;
                         folderRecord[region.id] = regionFolderName;
                     }
+
 
                 });
 
@@ -256,10 +239,12 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
 
 
         //original code by VoTT
-        /* if (this.options.includeImages) {
+        /* 
+        const results = await this.getAssetsForExport(); 
+        
+        if (this.options.includeImages) {
             await results.forEachAsync(async (assetMetadata) => {
                 const arrayBuffer = await HtmlFileReader.getAssetArray(assetMetadata.asset);
-                //add const pathName -> people_action_timestamp
                 const assetFilePath = `vott-json-export/${assetMetadata.asset.name}`;
                 await this.storageProvider.writeBinary(assetFilePath, Buffer.from(arrayBuffer));
             });
