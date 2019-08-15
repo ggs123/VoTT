@@ -4,8 +4,7 @@ import { IProject, IExportProviderOptions } from "../../models/applicationState"
 import Guard from "../../common/guard";
 import { constants } from "../../common/constants";
 import HtmlFileReader from "../../common/htmlFileReader";
-import { IAssetMetadata,IRegion } from "../../models/applicationState";
-import fs from "fs";
+import { IAssetMetadata} from "../../models/applicationState";
 
 /**
  * VoTT Json Export Provider options
@@ -33,40 +32,50 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
         const results = await this.getAssetsForExport(); 
         results.sort(compare);
 
-        var folderRecord = new Map();
+        const tagRecord : Map<string,Map<string,any>> = new Map<string,Map<string,any>>();
+        const folderRecord : Map<string,string> = new Map();
+        
 
         if (this.options.includeImages) {
 
-            results.forEach( function(assetMetadata, idx){
+            results.forEach( (assetMetadata) => {
 
                 assetMetadata.regions.forEach( (region) => {
                     
+                    //region.tags=["",""];
                     if(region.tags.length<2){
-                        region.tags[0]="ErrorTag1";
-                        region.tags[1]="ErrorTag2";
+                        region.tags=["error1","error2"];
                     }
 
+                    const currTagInfoMap = tagRecord.get(region.tags.join("_"));
 
-                    if(idx !== 0){
+                    if( currTagInfoMap && Math.abs (assetMetadata.asset.timestamp - currTagInfoMap.get("end") 
+                    - 1/this.project.videoSettings.frameExtractionRate) < 1e-5){
 
-                        const prevRegion = results[idx-1].regions.find( (r) => r.tags[0]===region.tags[0] );
-                        
-                        if(prevRegion && prevRegion.tags[1] === region.tags[1]){
-
-                            const prevRegionFolderName = folderRecord[prevRegion.id];
-                            const regionFolderName = removeTail(prevRegionFolderName) + assetMetadata.asset.timestamp;
-                            folderRecord[region.id] = regionFolderName;
-                            folderRecord[prevRegion.id] = regionFolderName;
-                            renewFolder(regionFolderName,idx-1,prevRegion);
-
-                        }else{
-                            const regionFolderName =  region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "-" + assetMetadata.asset.timestamp;
-                            folderRecord[region.id] = regionFolderName;
-                        }
+                        //continuous tag1_tag2 : renew end, regions
+                        currTagInfoMap.set("end",assetMetadata.asset.timestamp);
+                        currTagInfoMap.get("regions").push(region.id);
 
                     }else{
-                        const regionFolderName =  region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "-" + assetMetadata.asset.timestamp;
-                        folderRecord[region.id] = regionFolderName;
+                        //currTagInfoMap doesn't exist or continuity ends
+                        
+                        if( currTagInfoMap ){
+                            //continuous tag1_tag2 ends : push regions into folderRecord
+                            const arr = currTagInfoMap.get("regions");
+                            for(let r of arr){
+                                const s = region.tags.join("_") + "_" + currTagInfoMap.get("start") + "_" + 
+                                currTagInfoMap.get("end");
+                                folderRecord.set(r,s);
+                            }
+                        }
+                        
+                        const tagKey = region.tags.join("_");
+                        const tagValue = new Map<string,any>();
+                        tagValue.set("start",assetMetadata.asset.timestamp);
+                        tagValue.set("end",assetMetadata.asset.timestamp);
+                        tagValue.set("regions", [region.id] );
+                        tagRecord.set(tagKey,tagValue);
+
                     }
 
 
@@ -74,12 +83,21 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
 
             });
 
+
+            tagRecord.forEach(function(value, key) {
+                const s = key + "_" + value.get("start") + "_" + value.get("end");
+                value.get("regions").forEach( (regionId) => {
+                    folderRecord.set(regionId,s);
+                });
+            }) 
+
+
             await results.forEachAsync(async (assetMetadata) => {
 
                 await assetMetadata.regions.forEachAsync(async (region) => {
 
                     const arrayBuffer = await HtmlFileReader.getRegionArray(assetMetadata.asset,region);
-                    const regionFolderName = folderRecord[region.id];
+                    const regionFolderName = folderRecord.get(region.id);
                     const regionFileName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "_" +region.id + ".jpg";
                     const assetFilePath = `vott-json-export/${regionFolderName}/${regionFileName}`;
                     await this.storageProvider.writeTertiary(assetFilePath, Buffer.from(arrayBuffer));
@@ -98,142 +116,6 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
                 return 1;
             }else return 0;
         }
-
-        function removeTail(folder:string):string{
-            var i = folder.lastIndexOf("-");
-            return folder.substr(0,i+1);
-        }
-
-
-        function renewFolder(folderName:string, i:number, region:IRegion):void{
-
-            while(i>0){
-                var prevReg = results[i-1].regions.find( (r) => r.tags[0]===region.tags[0] && r.tags[1]===region.tags[1] );
-                if(prevReg){
-                    folderRecord[prevReg.id]=folderName;
-                }else{
-                    break;
-                }
-                i--;
-            } 
-
-        }
-
-
-
-    //complete: pictures categorized by folders
-    //bug: regions in first frame appeared in "undefined" folder
-
-     
-       /*  if (this.options.includeImages) {
-
-
-            var regFolderName : string;
-            var regionFolderName : string;
-            var regionFileName : string;
-            var assetFilePath : string;
-            var folderBuffer = new Map();
-            var regionFolders = new Map(); 
-
-
-            await results.forEachAsync(async (assetMetadata) => {
-
-                regionFolders.clear;
-                const frameIdx = results.indexOf(assetMetadata);
-
-                await assetMetadata.regions.forEachAsync(async (region) => {
-
-                    const arrayBuffer = await HtmlFileReader.getRegionArray(assetMetadata.asset,region);
-                    
-                    if(region.tags.length<2){
-                        region.tags[0]="ErrorTag1";
-                        region.tags[1]="ErrorTag2";
-                    }
-
-                    if(frameIdx !== 0){
-
-                        const reg = results[frameIdx-1].regions.find( (r) => r.tags[0]===region.tags[0] );
-                        //a region in previous frame has same Tag[0] 
-                        if(reg){
-
-                            //also has the same Tag[1]
-                            if(reg.tags[1] === region.tags[1]){
-
-                                //save in reg folder
-                                regFolderName = folderBuffer[reg.id];
-                                regionFileName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "_" + region.id + ".jpg";
-                                assetFilePath = `vott-json-export/${regFolderName}/${regionFileName}`;
-                                regionFolders[region.id] = regFolderName;
-                                await this.storageProvider.writeTertiary(assetFilePath, Buffer.from(arrayBuffer));
-                                
-                                //if last frame
-                                if( frameIdx === (results.length-1) ){
-                                    //rename reg folder: add reg endtime
-                                    const newRegFolderName = regFolderName + "_" + results[frameIdx-1].asset.timestamp;
-            
-                                    //await this.storageProvider.renameFolder(`vott-json-export/${regFolderName}`,
-                                        //`vott-json-export/${newRegFolderName}`); 
-                                    
-                                }
-
-                            }else{
-                                //Tag[1] not the same
-                                //rename reg folder: add reg endtime
-                                regFolderName = folderBuffer[reg.id];
-                                const newRegFolderName = regFolderName + "_" + results[frameIdx-1].asset.timestamp;
-                                
-                                //await this.storageProvider.renameFolder(`vott-json-export/${regFolderName}`,
-                                    //`vott-json-export/${newRegFolderName}`);  
-
-                                
-                                //save in new folder
-                
-                                if( frameIdx !== (results.length-1) ){
-                                    regionFolderName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp;
-                                }else{
-                                    //if last frame, add endtime
-                                    regionFolderName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "_" + assetMetadata.asset.timestamp;
-                                }
-                                regionFileName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "_" + region.id + ".jpg";
-                                assetFilePath = `vott-json-export/${regionFolderName}/${regionFileName}`;
-                                regionFolders[region.id] = regionFolderName;
-                                await this.storageProvider.writeTertiary(assetFilePath, Buffer.from(arrayBuffer));
-                                
-                            }
-                            
-                        }else{
-                            //no region in previous frame has same Tag[0]
-                            //save in new folder
-                            if( frameIdx !== (results.length-1) ){
-                                regionFolderName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp;
-                            }else{
-                                //if last frame, add endtime
-                                regionFolderName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "_" + assetMetadata.asset.timestamp;
-                            }
-                            regionFileName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "_" + region.id + ".jpg";
-                            assetFilePath = `vott-json-export/${regionFolderName}/${regionFileName}`;
-                            regionFolders[region.id] = regionFolderName;
-                            await this.storageProvider.writeTertiary(assetFilePath, Buffer.from(arrayBuffer));
-                        }
-                        
-                    //first frame
-                    }else{
-                        //save in new folder
-                        const firstFolderName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp;
-                        const firstRegionFileName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "_" + region.id + ".jpg";
-                        const firstAssetFilePath = `vott-json-export/${firstFolderName}/${firstRegionFileName}`;
-                        regionFolders[region.id] = firstFolderName;
-                        await this.storageProvider.writeTertiary(firstAssetFilePath, Buffer.from(arrayBuffer));
-                    }
-
-                });
-
-                //before new frame: renew folderBuffer with current folderpaths
-
-                folderBuffer = regionFolders;
-
-            });
-        } */
 
          
 
