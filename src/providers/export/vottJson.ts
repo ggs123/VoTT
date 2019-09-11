@@ -33,6 +33,7 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
         results.sort(compare);
 
         const tagRecord : Map<string,Map<string,any>> = new Map<string,Map<string,any>>();
+        const nameRecord : Map<string,string> = new Map();
         const folderRecord : Map<string,string> = new Map();
         
 
@@ -54,26 +55,29 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
 
                         //continuous tag1_tag2 : renew end, regions
                         currTagInfoMap.set("end",assetMetadata.asset.timestamp);
-                        currTagInfoMap.get("regions").push(region.id);
+                        currTagInfoMap.set("curr", currTagInfoMap.get("curr") + 1 );
+                        currTagInfoMap.get("regions").set(region.id, currTagInfoMap.get("curr"))
 
                     }else{
                         //currTagInfoMap doesn't exist or continuity ends
                         
                         if( currTagInfoMap ){
                             //continuous tag1_tag2 ends : push regions into folderRecord
-                            const arr = currTagInfoMap.get("regions");
-                            for(let r of arr){
-                                const s = region.tags.join("_") + "_" + currTagInfoMap.get("start") + "_" + 
-                                currTagInfoMap.get("end");
-                                folderRecord.set(r,s);
+                            const regionsToPush = currTagInfoMap.get("regions");
+                            const folderName = region.tags.join("_") + "_" + Math.random().toString(36).substr(2)
+                            for(var [id,count] of regionsToPush){
+                                const fileName =  count + "_" + id + ".jpg"
+                                nameRecord.set(id,fileName);
+                                folderRecord.set(id, folderName)
                             }
                         }
                         
                         const tagKey = region.tags.join("_");
                         const tagValue = new Map<string,any>();
-                        tagValue.set("start",assetMetadata.asset.timestamp);
-                        tagValue.set("end",assetMetadata.asset.timestamp);
-                        tagValue.set("regions", [region.id] );
+                        tagValue.set("start", assetMetadata.asset.timestamp);
+                        tagValue.set("end", assetMetadata.asset.timestamp);
+                        tagValue.set("curr", 0)
+                        tagValue.set("regions", new Map().set(region.id,0) );
                         tagRecord.set(tagKey,tagValue);
 
                     }
@@ -85,10 +89,15 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
 
 
             tagRecord.forEach(function(value, key) {
-                const s = key + "_" + value.get("start") + "_" + value.get("end");
-                value.get("regions").forEach( (regionId) => {
-                    folderRecord.set(regionId,s);
-                });
+                
+                const regionsToPush = value.get("regions")
+                const folderName = key + "_" + Math.random().toString(36).substr(2)
+                for(var [id,count] of regionsToPush){
+                    const fileName = count + "_" + id + ".jpg"
+                    nameRecord.set(id,fileName)
+                    folderRecord.set(id, folderName)
+                }
+            
             }) 
 
 
@@ -97,8 +106,8 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
                 await assetMetadata.regions.forEachAsync(async (region) => {
 
                     const arrayBuffer = await HtmlFileReader.getRegionArray(assetMetadata.asset,region);
-                    const regionFolderName = folderRecord.get(region.id);
-                    const regionFileName = region.tags[0] + "_" + region.tags[1] + "_" + assetMetadata.asset.timestamp + "_" +region.id + ".jpg";
+                    const regionFolderName = folderRecord.get(region.id)
+                    const regionFileName = nameRecord.get(region.id);
                     const assetFilePath = `vott-json-export/${regionFolderName}/${regionFileName}`;
                     await this.storageProvider.writeTertiary(assetFilePath, Buffer.from(arrayBuffer));
 
