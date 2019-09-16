@@ -167,17 +167,16 @@ export default class Canvas extends React.Component<ICanvasProps, ICanvasState> 
 
         //选中的框
         const regionTarget = selectedRegions[0]
-        //其他框中需要跳转的框
+        //其他框中需要跳转的
         const regionUpdate = this.findRegionUpdate(regionTarget,tag)
         const tagPrefix = tag.split('_')[0]
-        //选中的框中原有的tag
+        //选中的框中原有的同类型tag(要求与新tag不同)
         const originalTag = regionTarget.tags.find((r)=>(r.split('_')[0]==tagPrefix && r!=tag))
 
         const lockedTags = this.props.lockedTags;
         const lockedTagsEmpty = !lockedTags || !lockedTags.length;
         const regionsEmpty = !selectedRegions || !selectedRegions.length;
 
-        //选中的框中已经出现动作tag，则返回
         if ((!tag && lockedTagsEmpty) || (!originalTag && regionUpdate) || (tagPrefix=='动作' && originalTag) ||
         regionsEmpty || selectedRegions.length > 1) {
             return;
