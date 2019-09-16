@@ -205,13 +205,23 @@ export class TagInput extends React.Component<ITagInputProps, ITagInputState> {
         }, () => this.props.onChange(tags));
     }
 
+    private getIdCount(tags){
+        var count = 0;
+        for(const tag of tags){
+            if(tag.name.startsWith("人_")) count++;
+        }
+        return count;
+    }
+
     private onAddIdTags = () => {
 
         if (this.props.selectedRegions && this.props.selectedRegions.length == 1) {
+
+            const count = this.getIdCount(this.state.tags)
             
             // validate and add
             const newTag: ITag = {
-                name: '人_' + Math.random().toString(36).substr(2),
+                name: '人_' + count,
                 color: this.getNextColor(),
             };
             if (newTag.name.length && !this.state.tags.find((t) => t.name === newTag.name)) {
