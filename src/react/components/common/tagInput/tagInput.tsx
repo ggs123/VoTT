@@ -83,6 +83,7 @@ export class TagInput extends React.Component<ITagInputProps, ITagInputState> {
                     <TagInputToolbar
                         selectedTag={this.state.selectedTag}
                         onAddTags={() => this.setState({ addTags: !this.state.addTags })}
+                        onAddIdTags={this.onAddIdTags}
                         onSearchTags={() => this.setState({
                             searchTags: !this.state.searchTags,
                             searchQuery: "",
@@ -202,6 +203,28 @@ export class TagInput extends React.Component<ITagInputProps, ITagInputState> {
         this.setState({
             tags,
         }, () => this.props.onChange(tags));
+    }
+
+    private onAddIdTags = () => {
+
+        if (this.props.selectedRegions && this.props.selectedRegions.length == 1) {
+            
+            // validate and add
+            const newTag: ITag = {
+                name: '人_' + Math.random().toString(36).substr(2),
+                color: this.getNextColor(),
+            };
+            if (newTag.name.length && !this.state.tags.find((t) => t.name === newTag.name)) {
+                this.addTag(newTag);
+            } else if (!newTag.name.length) {
+                toast.warn(strings.tags.warnings.emptyName);
+            } else {
+                toast.warn(strings.tags.warnings.existingName);
+            }
+        
+            this.props.onTagClick(newTag);
+        }
+
     }
 
     private handleColorChange = (color: string) => {
@@ -466,12 +489,16 @@ export class TagInput extends React.Component<ITagInputProps, ITagInputState> {
         }
     }
 
+    //|| t.name.startsWith("人_") || t.name.startsWith("动作_"))
+
     private addTag = (tag: ITag) => {
-        if (!this.state.tags.find((t) => t.name === tag.name)) {
+        if (!this.state.tags.find((t) => (t.name === tag.name) )) {
             const tags = [...this.state.tags, tag];
             this.setState({
                 tags,
             }, () => this.props.onChange(tags));
         }
     }
+
+    
 }

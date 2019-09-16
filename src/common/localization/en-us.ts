@@ -153,6 +153,7 @@ export const english: IAppStrings = {
             moveUp: "Move tag up",
             moveDown: "Move tag down",
             delete: "Delete tag",
+            addId: "Add new id tag",
         },
     },
     connections: {
@@ -233,6 +234,7 @@ export const english: IAppStrings = {
             saveProject: "Save Project",
             exportProject: "Export Project",
             activeLearning: "Active Learning",
+            addNewIdTag: "Add New Id Tag"
         },
         videoPlayer: {
             previousTaggedFrame: {

@@ -18,6 +18,8 @@ export enum ToolbarItemName {
     SaveProject = "saveProject",
     ExportProject = "exportProject",
     ActiveLearning = "activeLearning",
+    //new function 1: add new id tag
+    AddNewIdTag = "addNewIdTag"
 }
 
 export enum ToolbarItemGroup {
@@ -147,4 +149,14 @@ export default function registerToolbar() {
         type: ToolbarItemType.Action,
         accelerators: ["CmdOrCtrl+E", "CmdOrCtrl+e"],
     }, ExportProject);
+
+    //new function 1: add new id tag
+    ToolbarItemFactory.register({
+        name: ToolbarItemName.AddNewIdTag,
+        tooltip: strings.editorPage.toolbar.addNewIdTag,
+        icon: "fa-mouse-pointer",
+        group: ToolbarItemGroup.Regions,
+        type: ToolbarItemType.Action,
+        accelerators: ["CmdOrCtrl+O", "CmdOrCtrl+o"],
+    });
 }

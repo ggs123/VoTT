@@ -134,6 +134,7 @@ export interface IAppStrings {
             moveUp: string;
             moveDown: string;
             delete: string;
+            addId: string;
         }
         colors: {
             white: string;
@@ -232,6 +233,7 @@ export interface IAppStrings {
             saveProject: string;
             exportProject: string;
             activeLearning: string;
+            addNewIdTag : string;
         }
         videoPlayer: {
             nextTaggedFrame: {

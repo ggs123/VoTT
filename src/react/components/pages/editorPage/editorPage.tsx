@@ -301,15 +301,35 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
         this.props.applicationActions.saveAppSettings(appSettings);
     }
 
+    public findRegionUpdate(regionTarget: IRegion, tag: ITag){
+
+        for(const region of this.state.selectedAsset.regions){
+            console.log("this region.id:"+region.id)
+            if(region.id != regionTarget.id){
+                for(const itag of region.tags){
+                    console.log("this tag name:"+itag)
+                    if(itag == tag.name){
+                       return region
+                    }
+                }
+            }
+        }
+        return null
+    }
+
     /**
      * Called when a tag from footer is clicked
      * @param tag Tag clicked
      */
     private onTagClicked = (tag: ITag): void => {
+
+        if(this.state.selectedRegions && this.state.selectedRegions.length > 1) return
+
         this.setState({
             selectedTag: tag.name,
             lockedTags: [],
         }, () => this.canvas.current.applyTag(tag.name));
+
     }
 
     /**

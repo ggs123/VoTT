@@ -154,6 +154,7 @@ export const spanish: IAppStrings = {
             moveDown: "Mover etiqueta hacia abajo",
             moveUp: "Mover etiqueta hacia arriba",
             delete: "Borrar etiqueta",
+            addId: "Añadir ID",
         },
     },
     connections: {
@@ -235,6 +236,7 @@ export const spanish: IAppStrings = {
             saveProject: "Guardar Proyecto",
             exportProject: "Exprtar Proyecto",
             activeLearning: "Aprendizaje Activo",
+            addNewIdTag: "Añadir una nueva identificación"
         },
         videoPlayer: {
             previousTaggedFrame: {

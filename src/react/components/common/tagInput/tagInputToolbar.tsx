@@ -19,6 +19,8 @@ export interface ITagInputToolbarProps {
     onDelete: (tag: ITag) => void;
     /** Function to call when one of the re-order buttons is clicked */
     onReorder: (tag: ITag, displacement: number) => void;
+    /** Function to call when add id tags button is clicked */
+    onAddIdTags: () => void;
 }
 
 interface ITagInputToolbarItemProps {
@@ -94,11 +96,21 @@ export default class TagInputToolbar extends React.Component<ITagInputToolbarPro
                 icon: "fa-trash",
                 handler: this.handleDelete,
             },
+            {
+                displayName: strings.tags.toolbar.addId,
+                className: "addId",
+                icon: "fa-plus-circle",
+                handler: this.handleAddId,
+            },
         ];
     }
 
     private handleAdd = () => {
         this.props.onAddTags();
+    }
+
+    private handleAddId = () => {
+        this.props.onAddIdTags();
     }
 
     private handleSearch = () => {

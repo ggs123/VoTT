@@ -26,11 +26,26 @@ export default class CanvasHelpers {
         if (tagIndex === -1) {
             // Tag isn't found within region tags, add it
             return [...tags, tag];
-        } else {
+        }else {
             // Tag is within region tags, remove it
             return tags.filter((t) => t !== tag);
         }
     }
+
+    public static changeTag(tags: string[], newTag:string, oldTag: string): string[] {
+
+        return [newTag, ...tags.filter((t) => t !== oldTag)];
+
+    }
+
+
+    public static replaceTag(tags: string[], originalTag:string, tag: string): string[] {
+
+        return [tag, ...tags.filter((t) => t !== originalTag)];
+
+    }
+
+
 
     /**
      * Adds tag to tags if not contained
