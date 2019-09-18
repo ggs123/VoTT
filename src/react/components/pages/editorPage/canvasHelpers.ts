@@ -25,23 +25,33 @@ export default class CanvasHelpers {
         const tagIndex = tags.findIndex((existingTag) => existingTag === tag);
         if (tagIndex === -1) {
             // Tag isn't found within region tags, add it
-            return [...tags, tag];
+            if(tag.startsWith("人_")){
+                return [tag, ...tags];
+            }else{
+                return [...tags, tag]
+            }
         }else {
             // Tag is within region tags, remove it
             return tags.filter((t) => t !== tag);
         }
     }
 
-    public static changeTag(tags: string[], newTag:string, oldTag: string): string[] {
-
-        return [newTag, ...tags.filter((t) => t !== oldTag)];
-
-    }
-
 
     public static replaceTag(tags: string[], originalTag:string, tag: string): string[] {
 
-        return [tag, ...tags.filter((t) => t !== originalTag)];
+        if(tag.startsWith("人_")){
+            return [tag, ...tags.filter((t) => t !== originalTag)];
+        }else{
+            return [...tags.filter((t) => t !== originalTag),tag];
+        }
+        
+    }
+
+    public static assignNewTag(allTags:string[], tags: string[], tagToExclude: string): string[] {
+
+        const tagsToChooseFrom = allTags.filter((t) => t != tagToExclude && t.startsWith("人_"));
+        const tagToAssign = tagsToChooseFrom[Math.floor((Math.random()*tagsToChooseFrom.length))]
+        return [tagToAssign, ...tags.filter((t) => t !== tagToExclude)];
 
     }
 

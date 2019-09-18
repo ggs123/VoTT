@@ -400,8 +400,9 @@ describe("Editor Canvas", () => {
         mockSelectedRegions(["test1"]);
         canvas.editor.onRegionSelected("test1", null);
 
+        const tags = this.props.project.tags.map((iTag)=>iTag.name)
         const newTag = "newTag";
-        canvas.applyTag(newTag);
+        canvas.applyTag(tags,newTag);
 
         const expected = cloneWithUpdatedRegionTags(wrapper.prop("selectedAsset"), "test1", [newTag]);
 
@@ -420,8 +421,9 @@ describe("Editor Canvas", () => {
         const canvas = wrapper.instance();
         mockSelectedRegions(["test1"]);
         canvas.editor.onRegionSelected("test1", false);
+        const tags = this.props.project.tags.map((iTag)=>iTag.name)
 
-        canvas.applyTag(newTag);
+        canvas.applyTag(tags,newTag);
 
         const expected = cloneWithUpdatedRegionTags(wrapper.prop("selectedAsset"), "test1", [newTag]);
 
@@ -454,8 +456,8 @@ describe("Editor Canvas", () => {
         wrapper.setProps({
             lockedTags: [],
         });
-
-        canvas.applyTag("tag4");
+        const tags = this.props.project.tags.map((iTag)=>iTag.name)
+        canvas.applyTag(tags,"tag4");
         expect(onAssetMetadataChanged).toBeCalledWith(cloneWithUpdatedRegionTags(original, "test1", []));
         expect(wrapper.state().currentAsset.regions[0].tags).toEqual([]);
     });

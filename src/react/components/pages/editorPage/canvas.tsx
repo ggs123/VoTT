@@ -16,6 +16,7 @@ import { SelectionMode } from "vott-ct/lib/js/CanvasTools/Interface/ISelectorSet
 import { Rect } from "vott-ct/lib/js/CanvasTools/Core/Rect";
 import { createContentBoundingBox } from "../../../../common/layout";
 import { update } from "@tensorflow/tfjs-layers/dist/variables";
+import { TagInput } from "../../common/tagInput/tagInput"
 
 export interface ICanvasProps extends React.Props<Canvas> {
     selectedAsset: IAssetMetadata;
@@ -139,13 +140,12 @@ export default class Canvas extends React.Component<ICanvasProps, ICanvasState> 
         );
     }
 
-    public findRegionUpdate(regionTarget: IRegion, tag){
+    public findRegionUpdate(regionTarget: IRegion, tag:string){
 
+        if(tag.startsWith("动作_")) return null
         for(const region of this.state.currentAsset.regions){
-            console.log("this region.id:"+region.id)
             if(region.id != regionTarget.id){
                 for(const itag of region.tags){
-                    console.log("this tag name:"+itag)
                     if(itag == tag){
                        return region
                     }
@@ -159,49 +159,27 @@ export default class Canvas extends React.Component<ICanvasProps, ICanvasState> 
      * Toggles tag on all selected regions
      * @param selectedTag Tag name
      */
-    public applyTag = (tag: string) => {
+    public applyTag = (allTags:string[], tag: string) => {
 
-        //ver. 1
         const selectedRegions = this.getSelectedRegions();
         const updateRegions = []
 
-        //选中的框
         const regionTarget = selectedRegions[0]
-        //其他框中需要跳转的
         const regionUpdate = this.findRegionUpdate(regionTarget,tag)
         const tagPrefix = tag.split('_')[0]
-        //选中的框中原有的同类型tag(要求与新tag不同)
         const originalTag = regionTarget.tags.find((r)=>(r.split('_')[0]==tagPrefix && r!=tag))
 
         const lockedTags = this.props.lockedTags;
         const lockedTagsEmpty = !lockedTags || !lockedTags.length;
         const regionsEmpty = !selectedRegions || !selectedRegions.length;
 
-        if ((!tag && lockedTagsEmpty) || (!originalTag && regionUpdate) || (tagPrefix=='动作' && originalTag) ||
-        regionsEmpty || selectedRegions.length > 1) {
+        if ((!tag && lockedTagsEmpty)  || regionsEmpty ) {
             return;
         }
         let transformer: (tags: string[], tag: string) => string[];
 
-        if(originalTag){
-            //需要跳转的情况
-            if(regionUpdate){
-                //在CanvasHelpers增加方法changeTag和replaceTag
-                regionUpdate.tags = CanvasHelpers.changeTag(regionUpdate.tags, originalTag, tag)
-                updateRegions.push(regionUpdate)
-                regionTarget.tags = CanvasHelpers.replaceTag(regionTarget.tags, originalTag, tag)
-                updateRegions.push(regionTarget)
-            }else{
-                regionTarget.tags = CanvasHelpers.replaceTag(regionTarget.tags, originalTag, tag)
-                updateRegions.push(regionTarget)
-            }
-            this.updateRegions(updateRegions);
-        }else{
-            //其他情况
-            if (lockedTagsEmpty) {
-                // Tag selected while region(s) selected
-                transformer = CanvasHelpers.toggleTag;
-            } else if (lockedTags.find((t) => t === tag)) {
+        if(!lockedTagsEmpty){
+            if (lockedTags.find((t) => t === tag)) {
                 // Tag added to locked tags while region(s) selected
                 transformer = CanvasHelpers.addIfMissing;
             } else {
@@ -212,40 +190,29 @@ export default class Canvas extends React.Component<ICanvasProps, ICanvasState> 
                 selectedRegion.tags = transformer(selectedRegion.tags, tag);
             }
             this.updateRegions(selectedRegions);
+        }else{
+            if(originalTag){
+                if(regionUpdate){
+                    regionUpdate.tags = CanvasHelpers.replaceTag(regionUpdate.tags, tag, originalTag)
+                    updateRegions.push(regionUpdate)
+                }
+                regionTarget.tags = CanvasHelpers.replaceTag(regionTarget.tags, originalTag, tag)
+                updateRegions.push(regionTarget)
+            }else{
+                if(regionUpdate){
+                    regionUpdate.tags = CanvasHelpers.assignNewTag(allTags, regionUpdate.tags, tag)
+                    updateRegions.push(regionUpdate)
+                }
+                regionTarget.tags = CanvasHelpers.toggleTag(regionTarget.tags, tag)
+                updateRegions.push(regionTarget)
+            }
+            this.updateRegions(updateRegions);
         }
 
         if (this.props.onSelectedRegionsChanged) {
             this.props.onSelectedRegionsChanged(selectedRegions);
         }
         
-
-        //original code by VoTT
-
-        /* const selectedRegions = this.getSelectedRegions();
-        const lockedTags = this.props.lockedTags;
-        const lockedTagsEmpty = !lockedTags || !lockedTags.length;
-        const regionsEmpty = !selectedRegions || !selectedRegions.length;
-        if ((!tag && lockedTagsEmpty) || regionsEmpty || selectedRegions.length > 1) {
-            return;
-        }
-        let transformer: (tags: string[], tag: string) => string[];
-        if (lockedTagsEmpty) {
-            // Tag selected while region(s) selected
-            transformer = CanvasHelpers.toggleTag;
-        } else if (lockedTags.find((t) => t === tag)) {
-            // Tag added to locked tags while region(s) selected
-            transformer = CanvasHelpers.addIfMissing;
-        } else {
-            // Tag removed from locked tags while region(s) selected
-            transformer = CanvasHelpers.removeIfContained;
-        }
-        for (const selectedRegion of selectedRegions) {
-            selectedRegion.tags = transformer(selectedRegion.tags, tag);
-        }
-        this.updateRegions(selectedRegions);
-        if (this.props.onSelectedRegionsChanged) {
-            this.props.onSelectedRegionsChanged(selectedRegions);
-        } */
     }
 
     public copyRegions = async () => {

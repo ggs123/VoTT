@@ -323,12 +323,13 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
      */
     private onTagClicked = (tag: ITag): void => {
 
-        if(this.state.selectedRegions && this.state.selectedRegions.length > 1) return
+        if(!this.state.selectedRegions || this.state.selectedRegions.length != 1) return
+        const tags = this.props.project.tags.map((iTag)=>iTag.name)
 
         this.setState({
             selectedTag: tag.name,
             lockedTags: [],
-        }, () => this.canvas.current.applyTag(tag.name));
+        }, () => this.canvas.current.applyTag(tags,tag.name));
 
     }
 
@@ -377,10 +378,11 @@ export default class EditorPage extends React.Component<IEditorPageProps, IEdito
 
     private onCtrlTagClicked = (tag: ITag): void => {
         const locked = this.state.lockedTags;
+        const tags = this.props.project.tags.map((iTag)=>iTag.name)
         this.setState({
             selectedTag: tag.name,
             lockedTags: CanvasHelpers.toggleTag(locked, tag.name),
-        }, () => this.canvas.current.applyTag(tag.name));
+        }, () => this.canvas.current.applyTag(tags, tag.name));
     }
 
     private getTagFromKeyboardEvent = (event: KeyboardEvent): ITag => {

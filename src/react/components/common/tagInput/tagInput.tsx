@@ -328,6 +328,8 @@ export class TagInput extends React.Component<ITagInputProps, ITagInputState> {
         return this.state.editingTagNode || document;
     }
 
+    
+
     private renderTagItems = () => {
         let props = this.createTagItemProps();
         const query = this.state.searchQuery;
