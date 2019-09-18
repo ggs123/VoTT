@@ -5,6 +5,7 @@ import Guard from "../../common/guard";
 import { constants } from "../../common/constants";
 import HtmlFileReader from "../../common/htmlFileReader";
 import { IAssetMetadata} from "../../models/applicationState";
+import { number } from "prop-types";
 
 /**
  * VoTT Json Export Provider options
@@ -31,7 +32,7 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
 
         const results = await this.getAssetsForExport(); 
         results.sort(compare);
-
+        console.log(results)
         const tagRecord : Map<string,Map<string,any>> = new Map<string,Map<string,any>>();
         const nameRecord : Map<string,string> = new Map();
         const folderRecord : Map<string,string> = new Map();
@@ -43,18 +44,16 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
 
                 assetMetadata.regions.forEach( (region) => {
                     
-                    //region.tags=["",""];
                     if(region.tags.length<2){
                         region.tags=["error1","error2"];
                     }
 
                     const currTagInfoMap = tagRecord.get(region.tags.join("_"));
 
-                    if( currTagInfoMap && Math.abs (assetMetadata.asset.timestamp - currTagInfoMap.get("end") 
-                    - 1/this.project.videoSettings.frameExtractionRate) < 1e-5){
+                    if( currTagInfoMap && (getName(assetMetadata.asset.name) - currTagInfoMap.get("end") == 1)){
 
                         //continuous tag1_tag2 : renew end, regions
-                        currTagInfoMap.set("end",assetMetadata.asset.timestamp);
+                        currTagInfoMap.set("end",getName(assetMetadata.asset.name));
                         currTagInfoMap.set("curr", currTagInfoMap.get("curr") + 1 );
                         currTagInfoMap.get("regions").set(region.id, currTagInfoMap.get("curr"))
 
@@ -74,8 +73,8 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
                         
                         const tagKey = region.tags.join("_");
                         const tagValue = new Map<string,any>();
-                        tagValue.set("start", assetMetadata.asset.timestamp);
-                        tagValue.set("end", assetMetadata.asset.timestamp);
+                        tagValue.set("start", getName(assetMetadata.asset.name));
+                        tagValue.set("end", getName(assetMetadata.asset.name));
                         tagValue.set("curr", 0)
                         tagValue.set("regions", new Map().set(region.id,0) );
                         tagRecord.set(tagKey,tagValue);
@@ -119,13 +118,19 @@ export class VottJsonExportProvider extends ExportProvider<IVottJsonExportProvid
 
 
         function compare (a:IAssetMetadata, b:IAssetMetadata){
-            if(a.asset.timestamp<b.asset.timestamp){
+            if(getName(a.asset.name)<getName(b.asset.name)){
                 return -1;
-            }else if(a.asset.timestamp>b.asset.timestamp){
+            }else if(getName(a.asset.name)>getName(b.asset.name)){
                 return 1;
             }else return 0;
         }
 
+        function getName (name:string){
+            const num = name.split('-')[1].split('.')[0]
+            return Number(num)
+        }
+
+        
          
 
 

@@ -103,6 +103,7 @@ export abstract class ExportProvider
             .filter((asset) => asset.type !== AssetType.Video)
             .filter(predicate)
             .mapAsync(async (asset) => await this.assetService.getAssetMetadata(asset));
+            
     }
 
     /**
