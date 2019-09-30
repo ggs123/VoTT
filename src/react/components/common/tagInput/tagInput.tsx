@@ -217,11 +217,11 @@ export class TagInput extends React.Component<ITagInputProps, ITagInputState> {
 
         if (this.props.selectedRegions && this.props.selectedRegions.length == 1) {
 
-            const count = this.getIdCount(this.state.tags)
+            //const count = this.getIdCount(this.state.tags)
             
             // validate and add
             const newTag: ITag = {
-                name: '人_' + count,
+                name: '人_' + Math.random().toString(36).substr(2),
                 color: this.getNextColor(),
             };
             if (newTag.name.length && !this.state.tags.find((t) => t.name === newTag.name)) {
